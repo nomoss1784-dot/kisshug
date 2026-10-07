@@ -37,6 +37,8 @@ export class MatchScene extends BaseScene {
   private confirmBtn: Button | null = null;
   private cancelBtn: Button | null = null;
   private lens: { x: number; y: number; r: number } | null = null;
+  private zoomBtn: Button | null = null;
+  private pendingSetAt = 0;
   private portrait = true;
   private hintTimer = 4000;
 
@@ -101,7 +103,10 @@ export class MatchScene extends BaseScene {
     this.placeRigs();
     this.confirmBtn = null;
     this.cancelBtn = null;
+    this.zoomBtn = null;
     if (this.twoStep) {
+      const zb = 40 * u;
+      this.zoomBtn = new Button({ label: '⤢', style: 'ghost', fontSize: 20 * u, id: 'zoom-reset', onClick: () => this.resetCam() }).set(this.boardRect.x + this.boardRect.w - zb - 6 * u, this.boardRect.y + 6 * u, zb, zb);
       const bw = Math.min(170 * u, this.boardRect.w * 0.48);
       const bh = 44 * u;
       const by = this.portrait ? this.boardRect.y + this.boardRect.h + 8 * u : this.boardRect.y + this.boardRect.h - bh;
@@ -296,6 +301,7 @@ export class MatchScene extends BaseScene {
     this.drawBoard(ctx);
     this.rigs.forEach((r) => r?.draw(ctx));
     this.drawHeader(ctx);
+    if (this.cam.zoom > 1.01) this.zoomBtn?.draw(ctx);
     if (this.pending) {
       this.drawLens(ctx);
       this.confirmBtn?.draw(ctx);
@@ -531,6 +537,10 @@ export class MatchScene extends BaseScene {
       this.g.sfx.play('button');
       return;
     }
+    if (this.zoomBtn && this.cam.zoom > 1.01 && inRect(p, this.zoomBtn.rect)) {
+      this.resetCam();
+      return;
+    }
     if (!this.humanTurn()) return;
     if (this.pending) {
       if (this.confirmBtn && inRect(p, this.confirmBtn.rect)) {
@@ -567,11 +577,32 @@ export class MatchScene extends BaseScene {
       return;
     }
     this.pending = m;
+    this.pendingSetAt = performance.now();
     this.g.sfx.play('button');
   }
 
-  onDoubleTap(): void {
-    if (this.twoStep) this.cam = { zoom: 1, ox: 0, oy: 0 };
+  /**
+   * Double tap (SPEC §5.1): resets zoom. The first tap of the pair already
+   * selected a cell, so a fresh double tap just clears that selection. If the
+   * highlighted cell was chosen earlier (the player paused to check the lens)
+   * and is tapped twice, that is a confirmation.
+   */
+  onDoubleTap(p: PointerPos): void {
+    if (!this.twoStep) return;
+    if (this.pending && this.humanTurn() && performance.now() - this.pendingSetAt > 300) {
+      const m = this.lensCellAt(p) ?? this.cellAt(p);
+      if (m && m.row === this.pending.row && m.col === this.pending.col) {
+        this.confirmPending();
+        return;
+      }
+    }
+    this.pending = null;
+    this.lens = null;
+    this.resetCam();
+  }
+
+  private resetCam(): void {
+    this.cam = { zoom: 1, ox: 0, oy: 0 };
   }
   onPan(dx: number, dy: number): void {
     if (!this.twoStep || this.cam.zoom <= 1) return;

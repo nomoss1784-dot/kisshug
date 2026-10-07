@@ -8,7 +8,7 @@ import { defineConfig, type Plugin } from 'vite';
 const classicScript = (): Plugin => ({
   name: 'kisshug-classic-script',
   transformIndexHtml(html) {
-    return html.replace(/<script type="module" crossorigin src="([^"]+)"><\/script>/g, '<script src="$1"></script>').replace(/<link rel="modulepreload"[^>]*>/g, '');
+    return html.replace(/<script type="module" crossorigin src="([^"]+)"><\/script>/g, '<script defer src="$1"></script>').replace(/<link rel="modulepreload"[^>]*>/g, '');
   },
 });
 

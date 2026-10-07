@@ -46,7 +46,7 @@ interface ActivePointer {
 }
 
 const TAP_SLOP = 10;
-const DOUBLE_TAP_MS = 320;
+const DOUBLE_TAP_MS = 280;
 
 /** Canvas host: DPR-aware resizing, gesture recognition, scene stack, main loop. */
 export class App {
@@ -63,7 +63,7 @@ export class App {
   private pinchCenter: PointerPos = { x: 0, y: 0 };
   private lastFrame = 0;
   private frameCount = 0;
-  private firstFrameCb: (() => void) | null = null;
+  private firstFrameCbs: Array<() => void> = [];
   private resizeListeners: Array<() => void> = [];
 
   constructor(canvas: HTMLCanvasElement) {
@@ -81,9 +81,10 @@ export class App {
     requestAnimationFrame((t) => this.frame(t));
   }
 
+  /** Runs cb right after the first rendered frame (or immediately if one was already drawn). */
   onFirstFrame(cb: () => void): void {
     if (this.frameCount > 0) cb();
-    else this.firstFrameCb = cb;
+    else this.firstFrameCbs.push(cb);
   }
 
   onResize(cb: () => void): void {
@@ -178,10 +179,10 @@ export class App {
       ctx.restore();
     }
     this.frameCount++;
-    if (this.frameCount === 1 && this.firstFrameCb) {
-      const cb = this.firstFrameCb;
-      this.firstFrameCb = null;
-      cb();
+    if (this.frameCount === 1) {
+      const cbs = this.firstFrameCbs;
+      this.firstFrameCbs = [];
+      cbs.forEach((cb) => cb());
     }
   }
 
