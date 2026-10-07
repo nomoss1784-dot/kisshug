@@ -8,6 +8,7 @@ import { t } from '../i18n';
 
 /** Settings overlay (Esc closes it). Small © NOMOSS credit lives here (SPEC §8.2). */
 export class SettingsScene extends BaseScene {
+  name = 'Settings';
   transparent = true;
   private deletedFlash = 0;
   private box = { x: 0, y: 0, w: 0, h: 0 };

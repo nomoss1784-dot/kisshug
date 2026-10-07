@@ -1,4 +1,5 @@
 import type { RigDef } from './types';
+import rigJson from '../../assets/characters/_rig/rig.json';
 import type { AnimalId } from '../state/types';
 import { ANIMAL_COLORS } from '../ui/theme';
 import { hueShiftImage, shiftHex, tintImage } from '../ui/draw';
@@ -33,10 +34,10 @@ export function loadImageFromDataUrl(dataUrl: string): Promise<HTMLImageElement>
   });
 }
 
-let rigPromise: Promise<RigDef> | null = null;
-export function loadRig(): Promise<RigDef> {
-  if (!rigPromise) rigPromise = fetch(assetUrl('_rig/rig.json')).then((r) => r.json() as Promise<RigDef>);
-  return rigPromise;
+
+/** rig.json is bundled at build time (no fetch, so file:// works); the file still lives at assets/characters/_rig/rig.json. */
+export async function loadRig(): Promise<RigDef> {
+  return rigJson as unknown as RigDef;
 }
 
 /** What a character looks like: animal parts (+ optional hue shift) or a photo head. */

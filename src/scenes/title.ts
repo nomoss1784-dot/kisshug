@@ -10,6 +10,7 @@ import { inRect } from '../ui/widgets';
 
 /** Title screen: logo, the four animals idling, tap to start. */
 export class TitleScene extends BaseScene {
+  name = 'Title';
   private players: RigPlayer[] = [];
   private tick = 0;
   private hearts: Array<{ x: number; y: number; s: number; v: number; a: number }> = [];

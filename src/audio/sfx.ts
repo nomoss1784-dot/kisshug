@@ -1,9 +1,13 @@
+import manifest from '../../assets/sfx/manifest.json';
+
 /**
  * Sound effects. Real files can be dropped into assets/sfx/<name>.mp3 and
- * listed in assets/sfx/manifest.json; anything missing is synthesised with
- * WebAudio so the game ships with zero audio bytes.
+ * listed in assets/sfx/manifest.json (e.g. "place": "./sfx/place.mp3");
+ * anything missing is synthesised with WebAudio so the game ships with zero
+ * audio bytes.
  */
 export type SfxName = 'place' | 'win' | 'draw' | 'button' | 'kiss' | 'hug' | 'shake';
+const NAMES: SfxName[] = ['place', 'win', 'draw', 'button', 'kiss', 'hug', 'shake'];
 
 export class Sfx {
   private ctx: AudioContext | null = null;
@@ -11,12 +15,10 @@ export class Sfx {
   private files: Partial<Record<SfxName, string>> = {};
   enabled = true;
 
-  async init(baseUrl: string): Promise<void> {
-    try {
-      const res = await fetch(`${baseUrl}sfx/manifest.json`);
-      if (res.ok) this.files = (await res.json()) as Partial<Record<SfxName, string>>;
-    } catch {
-      /* no manifest: synthesise everything */
+  init(baseUrl: string): void {
+    const m = manifest as Record<string, string>;
+    for (const name of NAMES) {
+      if (typeof m[name] === 'string') this.files[name] = m[name].replace(/^\.\//, baseUrl);
     }
   }
 

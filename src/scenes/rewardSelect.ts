@@ -11,6 +11,7 @@ import { t } from '../i18n';
 
 /** "If you win: kiss or hug?" for each human player (chars/photo modes). */
 export class RewardSelectScene extends BaseScene {
+  name = 'RewardSelect';
   constructor(g: import('./context').GameContext, private draft: SetupDraft, private idx: 0 | 1) {
     super(g);
   }

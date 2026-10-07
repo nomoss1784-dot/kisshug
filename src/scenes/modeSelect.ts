@@ -9,6 +9,7 @@ import { text } from '../ui/draw';
 
 /** Step 1: mode (classic / characters / photo). Step 2: opponent (AI / 2 players). */
 export class ModeSelectScene extends BaseScene {
+  name = 'ModeSelect';
   private step: 'mode' | 'opponent' = 'mode';
   private mode: GameMode = 'classic';
 

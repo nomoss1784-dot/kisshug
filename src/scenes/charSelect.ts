@@ -18,6 +18,7 @@ interface Card {
 
 /** Character pick for one player. AI opponents pick randomly (SPEC §3.4). */
 export class CharSelectScene extends BaseScene {
+  name = 'CharSelect';
   private draft: SetupDraft;
   private idx: 0 | 1;
   private cards: Card[] = [];

@@ -15,6 +15,7 @@ import { t } from '../i18n';
  * in memory unless the player opts in to saving it.
  */
 export class PhotoScene extends BaseScene {
+  name = 'Photo';
   private input: HTMLInputElement;
   private img: HTMLImageElement | null = null;
   private crop: CropState = { ox: 0, oy: 0, zoom: 1 };
@@ -24,7 +25,6 @@ export class PhotoScene extends BaseScene {
   private remember = false;
   private status: 'empty' | 'loading' | 'ready' | 'error' = 'empty';
   private draggingSlider = false;
-  private pinchZoomStart = 1;
 
   constructor(g: import('./context').GameContext, private draft: SetupDraft, private idx: 0 | 1) {
     super(g);
@@ -215,7 +215,6 @@ export class PhotoScene extends BaseScene {
     super.onPointerDown(p);
     this.draggingSlider = inRect(p, { ...this.slider, y: this.slider.y - 10, h: this.slider.h + 20 });
     if (this.draggingSlider) this.setSlider(p.x);
-    this.pinchZoomStart = this.crop.zoom;
   }
   onPointerUp(): void {
     super.onPointerUp();

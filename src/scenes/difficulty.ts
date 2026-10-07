@@ -13,6 +13,7 @@ import { t } from '../i18n';
 
 /** Board level (Lv1-3), AI strength, and start. */
 export class DifficultyScene extends BaseScene {
+  name = 'Difficulty';
   constructor(g: import('./context').GameContext, private draft: SetupDraft) {
     super(g);
   }

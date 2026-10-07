@@ -11,6 +11,7 @@ export abstract class BaseScene implements Scene {
   readonly tweens = new Tweens();
   readonly buttons = new ButtonGroup();
   transparent = false;
+  name = 'Scene';
   w = 0;
   h = 0;
   /** UI scale unit (1 at ~420px short side). */

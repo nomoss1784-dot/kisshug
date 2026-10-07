@@ -149,7 +149,12 @@ export function hueShiftImage(img: CanvasImageSource & { width: number; height: 
   const ctx = c.getContext('2d')!;
   ctx.drawImage(img, 0, 0);
   if (degrees === 0) return c;
-  const data = ctx.getImageData(0, 0, c.width, c.height);
+  let data: ImageData;
+  try {
+    data = ctx.getImageData(0, 0, c.width, c.height);
+  } catch {
+    return c; // tainted canvas (file://): skip the hue shift
+  }
   const d = data.data;
   for (let i = 0; i < d.length; i += 4) {
     if (d[i + 3] === 0) continue;
