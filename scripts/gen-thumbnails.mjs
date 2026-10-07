@@ -17,8 +17,9 @@ for (const [name, w, h] of sizes) {
   // Hide the settings gear + "tap to start" by taking the shot of the title scene with buttons stripped.
   await page.evaluate(() => {
     const s = window.__kisshug.top();
+    s.thumbnailMode = true;
     s.buttons.buttons = [];
-    s.draw = ((orig) => function (ctx) { orig.call(this, ctx); })(s.draw);
+    s.players.forEach((p, i) => { p.height *= 1.6; p.groundY = window.innerHeight * 0.72; p.x = window.innerWidth * (0.2 + 0.2 * i); });
   });
   await page.waitForTimeout(300);
   await page.screenshot({ path: `submission/thumbnails/thumb-${name}.png` });

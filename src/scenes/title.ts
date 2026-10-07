@@ -14,6 +14,8 @@ export class TitleScene extends BaseScene {
   private players: RigPlayer[] = [];
   private tick = 0;
   private hearts: Array<{ x: number; y: number; s: number; v: number; a: number }> = [];
+  /** Thumbnail capture: characters only, no text or buttons (SPEC §8.4). */
+  thumbnailMode = false;
 
   enter(): void {
     void Promise.all(ANIMALS.map((a) => loadSkin(this.g.rig, { animal: a, hueShift: 0, photo: null }))).then((skins) => {
@@ -67,6 +69,10 @@ export class TitleScene extends BaseScene {
     const portrait = this.h > this.w;
     const titleY = safe.y + (portrait ? safe.h * 0.26 : safe.h * 0.24);
     const titleSize = Math.min(72 * u, safe.w / 5.5);
+    if (this.thumbnailMode) {
+      this.players.forEach((p) => p.draw(ctx));
+      return;
+    }
     ctx.save();
     ctx.shadowColor = 'rgba(255,255,255,0.9)';
     ctx.shadowBlur = 12;
@@ -74,6 +80,7 @@ export class TitleScene extends BaseScene {
     ctx.restore();
     text(ctx, this.t('app.subtitle'), this.w / 2, titleY + titleSize * 0.85, { size: 17 * u, color: COLORS.textSoft, weight: 'normal', maxWidth: safe.w - 40 });
     this.players.forEach((p) => p.draw(ctx));
+    if (this.thumbnailMode) return;
     const pulse = 0.75 + 0.25 * Math.sin(this.tick / 350);
     ctx.globalAlpha = pulse;
     text(ctx, this.t('title.tap'), this.w / 2, safe.y + safe.h * 0.86, { size: 20 * u, color: COLORS.text });

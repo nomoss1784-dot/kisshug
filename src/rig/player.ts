@@ -167,6 +167,8 @@ export class RigPlayer {
     };
     const baseTransform = ctx.getTransform();
     for (const name of order) {
+      // Photo heads are human faces: no animal ears or tail (SPEC §6.4 emotes via overlays instead).
+      if (this.skin.photoHead && (name === 'ear_l' || name === 'ear_r' || name === 'tail')) continue;
       const def = rig.parts[name];
       const m = matrixFor(name);
       ctx.setTransform(baseTransform.multiply(m));
