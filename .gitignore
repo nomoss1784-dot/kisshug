@@ -1,0 +1,8 @@
+node_modules/
+dist/
+dist-playables/
+kisshug-playables.zip
+e2e/screenshots/
+test-results/
+playwright-report/
+.DS_Store
