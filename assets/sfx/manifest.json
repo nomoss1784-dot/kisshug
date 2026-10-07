@@ -1,0 +1,3 @@
+{
+  "$comment": "Map SFX names to files in this folder to replace the synthesised sounds, e.g. \"place\": \"./sfx/place.mp3\". Names: place, win, draw, button, kiss, hug, shake."
+}

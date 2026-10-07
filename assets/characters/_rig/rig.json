@@ -1,0 +1,116 @@
+{
+  "$comment": "Paper-doll rig (SPEC §6). Pivots are in image pixels. attach = point in the PARENT image where this part's pivot sits. Keyframes: [timeMs, {rot(deg), x, y, sx, sy}]. {animal} is replaced per character.",
+  "height": 950,
+  "groundOffset": 140,
+  "headRadius": 220,
+  "headCenter": [256, 240],
+  "parts": {
+    "tail":  { "image": "{animal}/tail.png",  "parent": "body", "attach": [250, 380], "pivot": [40, 128],  "z": 1, "size": [256, 256] },
+    "leg_l": { "image": "common/leg_l.png",   "parent": "body", "attach": [205, 400], "pivot": [128, 30],  "z": 5, "size": [256, 256], "tint": true },
+    "leg_r": { "image": "common/leg_r.png",   "parent": "body", "attach": [307, 400], "pivot": [128, 30],  "z": 6, "size": [256, 256], "tint": true },
+    "arm_l": { "image": "common/arm_l.png",   "parent": "body", "attach": [165, 110], "pivot": [128, 30],  "z": 8, "size": [256, 256], "tint": true },
+    "body":  { "image": "common/body.png",    "parent": null,   "attach": [0, 0],     "pivot": [256, 440], "z": 10, "size": [512, 512], "tint": true },
+    "arm_r": { "image": "common/arm_r.png",   "parent": "body", "attach": [347, 110], "pivot": [128, 30],  "z": 12, "size": [256, 256], "tint": true },
+    "ear_l": { "image": "{animal}/ear_l.png", "parent": "head", "attach": [110, 70],  "pivot": [128, 230], "z": 18, "size": [256, 256] },
+    "ear_r": { "image": "{animal}/ear_r.png", "parent": "head", "attach": [402, 70],  "pivot": [128, 230], "z": 19, "size": [256, 256] },
+    "head":  { "image": "{animal}/head.png",  "parent": "body", "attach": [256, 70],  "pivot": [256, 460], "z": 20, "size": [512, 512] }
+  },
+  "animalPose": {
+    "cat":    { "ear_l": { "rot": -12 }, "ear_r": { "rot": 12 }, "tail": { "rot": -30 } },
+    "dog":    { "ear_l": { "rot": -70 }, "ear_r": { "rot": 70 }, "tail": { "rot": -20 } },
+    "rabbit": { "ear_l": { "rot": -16 }, "ear_r": { "rot": 16 }, "tail": { "rot": 0 } },
+    "bear":   { "ear_l": { "rot": -30 }, "ear_r": { "rot": 30 }, "tail": { "rot": 0 } }
+  },
+  "clips": {
+    "idle": { "duration": 1600, "loop": true, "tracks": {
+      "body":  [[0, {"y": 0}], [800, {"y": -7}], [1600, {"y": 0}]],
+      "head":  [[0, {"rot": -2}], [800, {"rot": 2}], [1600, {"rot": -2}]],
+      "arm_l": [[0, {"rot": 6}], [800, {"rot": -6}], [1600, {"rot": 6}]],
+      "arm_r": [[0, {"rot": -6}], [800, {"rot": 6}], [1600, {"rot": -6}]],
+      "tail":  [[0, {"rot": 0}], [800, {"rot": -14}], [1600, {"rot": 0}]]
+    }},
+    "think": { "duration": 1800, "loop": true, "tracks": {
+      "head":  [[0, {"rot": -10, "x": 6}], [900, {"rot": -13, "x": 8}], [1800, {"rot": -10, "x": 6}]],
+      "arm_r": [[0, {"rot": -150}], [900, {"rot": -158}], [1800, {"rot": -150}]],
+      "arm_l": [[0, {"rot": 10}], [1800, {"rot": 10}]],
+      "body":  [[0, {"y": 0}], [900, {"y": -4}], [1800, {"y": 0}]]
+    }},
+    "walk": { "duration": 500, "loop": true, "tracks": {
+      "leg_l": [[0, {"rot": -25}], [250, {"rot": 25}], [500, {"rot": -25}]],
+      "leg_r": [[0, {"rot": 25}], [250, {"rot": -25}], [500, {"rot": 25}]],
+      "arm_l": [[0, {"rot": 20}], [250, {"rot": -20}], [500, {"rot": 20}]],
+      "arm_r": [[0, {"rot": -20}], [250, {"rot": 20}], [500, {"rot": -20}]],
+      "body":  [[0, {"y": 0}], [125, {"y": -10}], [250, {"y": 0}], [375, {"y": -10}], [500, {"y": 0}]],
+      "root":  [[0, {"rot": 4}], [500, {"rot": 4}]]
+    }},
+    "happy": { "duration": 700, "loop": true, "tracks": {
+      "root":  [[0, {"y": 0}], [350, {"y": -70}], [700, {"y": 0}]],
+      "arm_l": [[0, {"rot": 150}], [350, {"rot": 170}], [700, {"rot": 150}]],
+      "arm_r": [[0, {"rot": -150}], [350, {"rot": -170}], [700, {"rot": -150}]],
+      "leg_l": [[0, {"rot": 0}], [350, {"rot": -20}], [700, {"rot": 0}]],
+      "leg_r": [[0, {"rot": 0}], [350, {"rot": 20}], [700, {"rot": 0}]],
+      "head":  [[0, {"rot": 0}], [350, {"rot": -8}], [700, {"rot": 0}]]
+    }},
+    "sad": { "duration": 2000, "loop": true, "tracks": {
+      "head":  [[0, {"rot": 14, "y": 10}], [1000, {"rot": 16, "y": 12}], [2000, {"rot": 14, "y": 10}]],
+      "body":  [[0, {"y": 8}], [2000, {"y": 8}]],
+      "arm_l": [[0, {"rot": 4}], [2000, {"rot": 4}]],
+      "arm_r": [[0, {"rot": -4}], [2000, {"rot": -4}]],
+      "tail":  [[0, {"rot": 25}], [2000, {"rot": 25}]]
+    }},
+    "kiss_actor": { "duration": 2000, "loop": false, "tracks": {
+      "root":  [[0, {"rot": 0}], [400, {"rot": 14}], [1500, {"rot": 14}], [2000, {"rot": 0}]],
+      "head":  [[0, {"rot": 0, "x": 0}], [400, {"rot": 8, "x": 30}], [700, {"rot": 10, "x": 46}], [1500, {"rot": 8, "x": 30}], [2000, {"rot": 0, "x": 0}]],
+      "arm_l": [[0, {"rot": 0}], [400, {"rot": 35}], [1500, {"rot": 35}], [2000, {"rot": 0}]],
+      "arm_r": [[0, {"rot": 0}], [400, {"rot": -60}], [1500, {"rot": -60}], [2000, {"rot": 0}]],
+      "leg_l": [[0, {"rot": 0}], [400, {"rot": -10}], [1500, {"rot": -10}], [2000, {"rot": 0}]]
+    }},
+    "kiss_target": { "duration": 2000, "loop": false, "tracks": {
+      "root":  [[0, {"rot": 0}], [500, {"rot": -8}], [1500, {"rot": -8}], [2000, {"rot": 0}]],
+      "head":  [[0, {"rot": 0}], [500, {"rot": -6}], [1500, {"rot": -6}], [2000, {"rot": 0}]],
+      "arm_l": [[0, {"rot": 0}], [600, {"rot": 120}], [1500, {"rot": 120}], [2000, {"rot": 0}]],
+      "arm_r": [[0, {"rot": 0}], [600, {"rot": -120}], [1500, {"rot": -120}], [2000, {"rot": 0}]]
+    }},
+    "hug_actor": { "duration": 2000, "loop": false, "tracks": {
+      "root":  [[0, {"rot": 0}], [400, {"rot": 10}], [1600, {"rot": 10}], [2000, {"rot": 0}]],
+      "arm_l": [[0, {"rot": 0}], [400, {"rot": -95}], [800, {"rot": -100}], [1000, {"rot": -92}], [1200, {"rot": -100}], [1600, {"rot": -95}], [2000, {"rot": 0}]],
+      "arm_r": [[0, {"rot": 0}], [400, {"rot": -70}], [800, {"rot": -78}], [1000, {"rot": -70}], [1200, {"rot": -78}], [1600, {"rot": -70}], [2000, {"rot": 0}]],
+      "head":  [[0, {"rot": 0}], [400, {"rot": 10}], [1600, {"rot": 10}], [2000, {"rot": 0}]],
+      "body":  [[0, {"sx": 1}], [800, {"sx": 1.04}], [1000, {"sx": 0.97}], [1200, {"sx": 1.04}], [1600, {"sx": 1}]]
+    }},
+    "hug_target": { "duration": 2000, "loop": false, "tracks": {
+      "root":  [[0, {"rot": 0}], [500, {"rot": -6}], [1600, {"rot": -6}], [2000, {"rot": 0}]],
+      "arm_l": [[0, {"rot": 0}], [500, {"rot": 80}], [1600, {"rot": 80}], [2000, {"rot": 0}]],
+      "arm_r": [[0, {"rot": 0}], [500, {"rot": 60}], [1600, {"rot": 60}], [2000, {"rot": 0}]],
+      "head":  [[0, {"rot": 0}], [500, {"rot": -10}], [1600, {"rot": -10}], [2000, {"rot": 0}]],
+      "body":  [[0, {"sx": 1}], [800, {"sx": 0.94}], [1000, {"sx": 1}], [1200, {"sx": 0.94}], [1600, {"sx": 1}]]
+    }},
+    "shake_actor": { "duration": 1500, "loop": false, "tracks": {
+      "arm_r": [[0, {"rot": 0}], [300, {"rot": -95}], [500, {"rot": -80}], [700, {"rot": -100}], [900, {"rot": -80}], [1100, {"rot": -95}], [1500, {"rot": 0}]],
+      "head":  [[0, {"rot": 0}], [300, {"rot": 8}], [1100, {"rot": 8}], [1500, {"rot": 0}]],
+      "root":  [[0, {"rot": 0}], [300, {"rot": 4}], [1100, {"rot": 4}], [1500, {"rot": 0}]],
+      "body":  [[0, {"y": 0}], [500, {"y": -6}], [700, {"y": 0}], [900, {"y": -6}], [1100, {"y": 0}]]
+    }},
+    "shake_target": { "duration": 1500, "loop": false, "tracks": {
+      "arm_r": [[0, {"rot": 0}], [300, {"rot": -95}], [500, {"rot": -110}], [700, {"rot": -90}], [900, {"rot": -110}], [1100, {"rot": -95}], [1500, {"rot": 0}]],
+      "head":  [[0, {"rot": 0}], [300, {"rot": 8}], [1100, {"rot": 8}], [1500, {"rot": 0}]],
+      "root":  [[0, {"rot": 0}], [300, {"rot": 4}], [1100, {"rot": 4}], [1500, {"rot": 0}]],
+      "body":  [[0, {"y": 0}], [500, {"y": -6}], [700, {"y": 0}], [900, {"y": -6}], [1100, {"y": 0}]]
+    }},
+    "flair_cat": { "duration": 1200, "loop": false, "additive": true, "tracks": {
+      "tail": [[0, {"rot": 0}], [600, {"rot": -95, "sx": 1.1}], [1200, {"rot": -95, "sx": 1.1}]]
+    }},
+    "flair_dog": { "duration": 240, "loop": true, "additive": true, "tracks": {
+      "tail": [[0, {"rot": -30}], [120, {"rot": 30}], [240, {"rot": -30}]]
+    }},
+    "flair_rabbit": { "duration": 900, "loop": false, "additive": true, "tracks": {
+      "ear_l": [[0, {"rot": 0}], [300, {"rot": 22}], [500, {"rot": 12}], [900, {"rot": 16}]],
+      "ear_r": [[0, {"rot": 0}], [300, {"rot": -22}], [500, {"rot": -12}], [900, {"rot": -16}]]
+    }},
+    "flair_bear": { "duration": 2000, "loop": false, "additive": true, "tracks": {
+      "arm_l": [[0, {"rot": 0}], [600, {"rot": -25}], [1600, {"rot": -25}], [2000, {"rot": 0}]],
+      "arm_r": [[0, {"rot": 0}], [600, {"rot": -25}], [1600, {"rot": -25}], [2000, {"rot": 0}]],
+      "root":  [[0, {"sy": 1}], [600, {"sy": 1.03}], [1600, {"sy": 1.03}], [2000, {"sy": 1}]]
+    }}
+  }
+}

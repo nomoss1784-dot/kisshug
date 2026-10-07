@@ -2,6 +2,7 @@ import { defineConfig } from 'vite';
 
 export default defineConfig(({ mode }) => ({
   base: './',
+  publicDir: 'assets',
   define: {
     __PLAYABLES__: JSON.stringify(mode === 'playables'),
     __PHOTO_MODE_ENABLED__: JSON.stringify(true),
