@@ -25,8 +25,8 @@
   "char.locked.hint": "A new friend may join someday",
   "select.title": "{player}'s character",
   "select.aiTitle": "AI's character",
-  "select.side.o": "O side",
-  "select.side.x": "X side",
+  "select.side.o": "O side's character",
+  "select.side.x": "X side's character",
   "select.random": "Random",
   "reward.title": "If {player} wins?",
   "reward.kiss": "Kiss",
@@ -96,5 +96,13 @@
   "common.player2": "Player 2",
   "common.you": "You",
   "common.ai": "AI",
-  "common.photo": "Photo"
+  "common.photo": "Photo",
+  "side.title": "Which side are you?",
+  "side.x": "X wins = kiss",
+  "side.o": "O wins = hug",
+  "side.x.short": "X",
+  "side.o.short": "O",
+  "match.youAre": "You are {mark}",
+  "match.turnMark": "{mark}'s turn",
+  "select.sideNote": "Appears in the result scene"
 }

@@ -3,7 +3,6 @@ import { createPlatform } from './platform';
 import { PlayablesPlatform } from './platform/playables';
 import { Store } from './state/store';
 import { Sfx } from './audio/sfx';
-import { loadRig } from './rig/assets';
 import { AiClient } from './ai/client';
 import type { GameContext } from './scenes/context';
 import { LoadingScene } from './scenes/loading';
@@ -32,16 +31,14 @@ async function boot(): Promise<void> {
     sfx,
     platform,
     ai: new AiClient(),
-    rig: null as unknown as GameContext['rig'],
     photoModeEnabled: __PHOTO_MODE_ENABLED__,
     go: (scene: Scene) => app.replace(scene),
     overlay: (scene: Scene) => app.push(scene),
   };
   app.replace(new LoadingScene(ctx));
-  ctx.rig = await loadRig();
   app.replace(new TitleScene(ctx));
 
-  // Debug/testing hooks (not used by gameplay).
+  // Debug/testing hooks (used by the Playwright suite).
   (window as unknown as { __kisshug: unknown }).__kisshug = {
     app,
     store,

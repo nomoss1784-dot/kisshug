@@ -1,8 +1,63 @@
 # キスハグ / KissHug — 完了報告 REPORT.md
 
-- 日付: 2026-10-08
-- 仕様: SPEC.md v0.2 のフェーズ1〜3を実装済み
-- 実装分担: 盤面ロジック（`src/game/`）と AI（`src/ai/`）＋その単体テストは Codex、その他（画面・リグ・写真・プラットフォーム層・ビルド・e2e）は Claude Code
+- 日付: 2026-10-08（v0.3 更新）
+- 仕様: SPEC.md v0.3（§6 をポーズ画像方式に書き換え済み）。フェーズ1〜3＋見た目・演出の作り替えを実装済み
+- 実装分担: 盤面ロジック（`src/game/`）・AI（`src/ai/`）・演出タイムラインエンジン（`src/fx/`）＋それぞれの単体テストは Codex。画面・画像ローダ・ぬいぐるみ風フォールバック・描画・写真・プラットフォーム層・ビルド・e2e・ドキュメントは Claude Code
+
+---
+
+## 0. v0.3 で変わったこと（ぬいぐるみ風イラスト＋なめらかな演出）
+
+| 項目 | 内容 |
+|---|---|
+| キャラ表示 | パーツ式リグを**廃止**。ポーズごとの 1 枚絵（`idle, happy, kiss_give, kiss_receive, hug_give, hug_receive, handshake, face`）を `assets/characters/<animal>/` に置く方式。画像が無いスロットは**コードで描くぬいぐるみ風 SVG**（`src/art/plush.ts`: 丸いシルエット、ラジアルグラデーションの陰影、大きなつやつやの目、頬の赤み、耳・しっぽ・色で 4 種を判別）で代替。PNG/WebP を置くと `scripts/art-manifest.mjs`（ビルド時に自動実行）が検出して優先する |
+| 写真モード | `assets/characters/photo/` に頭が空白の体スロット。`anchors.json` の `head`（中心・半径）に切り抜いた顔を合成 |
+| アンカー | 各キャラ・各ポーズの `feet / head / forehead / eyes / cheeks / top` を `anchors.json` に定義。クラシックでは `forehead` に ✗/◯ バッジ |
+| 読み込み | `gameReady` 後に、対局で選ばれた 2 キャラ分だけ遅延ロード。タイトル・選択画面は `face` だけ。画像合計 3MB 超はビルドで停止（現在は画像 0 バイト） |
+| 演出エンジン | `src/fx/`（Codex 実装）: 純粋関数 `時刻 → スプライト状態[]`。可変プロパティは **`x, y, sx, sy, rot, opacity` のみ**（`tests/fx.test.ts` が全フレームで検証）。ease-out と cubic-bezier(0.34, 1.56, 0.64, 1) を使い分け |
+| 待機 | 1.6 秒周期の呼吸（sy 1→1.035 / sx 1→0.985、2 人は位相ずらし）＋約 3.2 秒ごとに 120ms のまばたきオーバーレイ |
+| キス 2.5 秒 | 2 回ホップで寄る（着地 squash 1.08×0.92 → オーバーシュートで戻す）→ 0.25 秒クロスフェード → 頬の赤み → ハート 4 個が上へ漂う（大きさ・タイミングをばらす）→ ホールド → happy へ |
+| ハグ 2.5 秒 | ホップ → hug_give を手前に重ねてクロスフェード → 2 人まとめて scale 1→0.94→1 を 2 回（0.35 秒）→ ハート＋キラキラ → happy へ |
+| 握手 1.8 秒 | 中央へ 1 ホップ → handshake → 上下 2 回 → キラキラ → happy へ |
+| 終了後 | 結果画面のまま happy ポーズで待機ループ（呼吸・まばたき）。演出中タップでスキップ（初回は最後まで） |
+| クラシック是正 | 駒は ✗（ピンク）/ ◯（ブルー）のベクター記号のみ。対局前に「あなたは ✗ / ◯」を選ぶ画面（`SideSelectScene`）。動物は結果演出にだけ登場し額にバッジ。勝利ラインは枠を濃く＋薄い黄色でハイライト |
+| 選択画面 | カードは `face` 画像。選んだカードが小さく弾んでから次へ |
+| ドキュメント | `ART_PROMPTS.md`（ChatGPT 画像生成のプロンプト・参照画像の使い方・透過化・足元合わせ）、SPEC.md §6 書き換え |
+
+### スクリーンショット（`docs/screenshots/`、Playwright で自動生成）
+
+| スマホ縦 390×844 | スマホ横 844×390 |
+|---|---|
+| ![](docs/screenshots/match-phone-portrait.png) | ![](docs/screenshots/match-phone-landscape.png) |
+
+| PC 1280×720 | 1:1 800×800 |
+|---|---|
+| ![](docs/screenshots/match-pc.png) | ![](docs/screenshots/match-square.png) |
+
+| キス | ハグ | 握手 |
+|---|---|---|
+| ![](docs/screenshots/ceremony-kiss.png) | ![](docs/screenshots/ceremony-hug.png) | ![](docs/screenshots/ceremony-shake.png) |
+
+| クラシック: 陣営選択 | 勝利ライン | 額バッジ付き演出 |
+|---|---|---|
+| ![](docs/screenshots/classic-side-select.png) | ![](docs/screenshots/classic-win-line.png) | ![](docs/screenshots/classic-ceremony-badges.png) |
+
+### v0.3 の完了条件
+| 条件 | 結果 |
+|---|---|
+| 既存テストすべて通過 | ✅ 単体 26 件（盤面・AI・fx）、e2e 26 件（レイアウト／通信ゼロ／19×19／AI／SDK モック／ZIP／報告用スクショ） |
+| 演出が transform/opacity のみで動くことをテストで確認 | ✅ `tests/fx.test.ts`: 3 演出を 16ms 刻みで全サンプルし、スプライトのキーが `x, y, sx, sy, rot, opacity`＋静的な識別子だけであること、クロスフェードで不透明度が保存されること、足が地面より下に行かないこと、終了時に happy ×2 だけが残ることを検証 |
+| 4 パターン＋演出 3 枚のスクショを REPORT に添付 | ✅ 上記 |
+| SPEC.md §6 を新方式に書き換え | ✅（§2 の方式、§3.1 クラシック、§5 の駒、§9.2 の構成も同期） |
+| GitHub Pages にデプロイ | ✅ https://nomoss1784-dot.github.io/kisshug/ |
+
+### v0.3 で判断したこと
+- 描画は引き続き Canvas 2D。「transform と opacity だけ」はエンジンの出力契約として実装し、描画側はそれ以外を触らない（DOM/CSS transform に移すと盤面との重ね順や DPR 制御が崩れるため）。
+- フォールバック絵は SVG 文字列を `Image` として読み込んで描画（どの拡大率でもにじまない）。同キャラ対戦の 2 体目はパレットの色相を 30° 回して生成。
+- フォールバック時はネットワークを一切使わない（画像 0 バイト）。本番画像は `art-manifest` に載ったものだけ読むので 404 の試し撃ちもしない。
+- ホップは 320ms（上り 160 / 下り 160）、ハート・キラキラは指定時間内に終わるよう寿命を調整（Codex の解釈）。
+- 写真モードの頭は耳・しっぽなしの体（`photo/`）。まばたき・頬の赤みは写真の上にも重ねる。
+- クラシックの陣営選択はプレイヤー 1 が行い、2 人対戦では相手が残りの側。✗ 勝ち＝キス、◯ 勝ち＝ハグは据え置き。
 
 ---
 
@@ -19,8 +74,9 @@ npm run typecheck
 ```
 
 - 静的サーバで動かすだけなら `npm run build` 後に `npm run preview`（http://localhost:4173）。
+- 本番画像の作り方: `ART_PROMPTS.md`。置くだけで差し替わる（`npm run build` が自動検出）
 - Playables SDK のローカルモック: URL に `?mock=playables&lang=ja` を付ける（`window.__ytmock` で pause/resume/音声/言語を操作できる）。
-- プレースホルダ画像の再生成: `node scripts/gen-placeholders.mjs`。サムネイル再生成: `npm run build && npm run preview` を起動した状態で `node scripts/gen-thumbnails.mjs`。
+- アンカー JSON の再生成: `node scripts/gen-anchors.mjs`。サムネイル再生成: `npm run build && npm run preview` を起動した状態で `node scripts/gen-thumbnails.mjs`。
 
 ## 2. 公開URL
 
@@ -63,7 +119,7 @@ SDK 連携一覧（`src/platform/playables.ts`）: `firstFrameReady`/`gameReady`
 ## 4. 仕様書から判断で決めたこと、変えたことと理由
 
 1. **ゲームエンジン: Phaser ではなく plain Canvas 2D**（§9.1/§11 で許容）。理由: バンドルが 90KB（Phaser は約 1.3MB）で `gameReady` までが軽い、DPR と文字のにじみを完全に制御できる、依存ゼロで Playables の CSP/オフライン要件に強い。シーン管理・トゥイーン・ジェスチャ認識は `src/ui/` に自前実装（約 600 行）。
-2. **ビルドを単一の classic `<script defer>`（IIFE）にした。** ES module だと「ZIP を展開して index.html を開くだけ」（file://）で動かないため。`rig.json` と効果音マニフェストも fetch ではなくビルド時にバンドル（ファイル自体は仕様通り `assets/` に置いてあり、編集すれば反映される）。
+2. **ビルドを単一の classic `<script defer>`（IIFE）にした。** ES module だと「ZIP を展開して index.html を開くだけ」（file://）で動かないため。`anchors.json`・画像マニフェスト・効果音マニフェストも fetch ではなくビルド時にバンドル（ファイル自体は仕様通り `assets/` に置いてあり、編集すれば反映される）。
 3. **Worker が使えない環境ではメインスレッドで探索**（file:// では Chrome が Worker を拒否する）。http 配信では常に Worker。
 4. **効果音は WebAudio で合成**（音声ファイル 0 バイト）。`assets/sfx/manifest.json` に `"place": "./sfx/place.mp3"` のように書けばファイル再生に切り替わる（§9.5 の OGG/MP3 差し替え前提）。
 5. **Lv3 の盤サイズは 15 / 17 / 19 の3択**（§5 は 17 を許容、§11 は 15/19 の2択で矛盾。上位互換として 3 択。既定 15）。
@@ -101,30 +157,19 @@ SDK 連携一覧（`src/platform/playables.ts`）: `firstFrameReady`/`gameReady`
 
 ## 7. 本番アートの差し替え手順
 
-すべて **PNG（アルファ付き）**。キャンバスサイズと基準位置（ピボット）を守れば `assets/characters/_rig/rig.json` の変更は不要。差し替え後 `npm run build` するだけ。
+詳細は **`ART_PROMPTS.md`**（プロンプト、参照画像で全ポーズを揃える手順、白背景の透過化、足元の揃え方）。要点:
 
-### 共通パーツ `assets/characters/common/`（**白〜薄いグレーで描く**。動物の体色／写真モードのパステルは実行時に乗算で着色）
-| ファイル | サイズ | 基準位置（ピボット） | 備考 |
+| 置き場所 | ファイル | サイズ | 備考 |
 |---|---|---|---|
-| `body.png` | 512×512 | (256, 440) = 腰（足の付け根） | 首の接続点 (256, 70)、肩 L(165,110) R(347,110)、腰 L(205,400) R(307,400)、しっぽ (250,380) |
-| `arm_l.png` `arm_r.png` | 256×256 | (128, 30) = 肩 | 腕は真下に垂らした状態で描く（下端 ≈ y=215）。回転はプログラム側 |
-| `leg_l.png` `leg_r.png` | 256×256 | (128, 30) = 股関節 | 真下に伸ばした状態（足裏 ≈ y=215） |
+| `assets/characters/{cat,dog,rabbit,bear}/` | `idle, happy, kiss_give, kiss_receive, hug_give, hug_receive, handshake` `.png`/`.webp` | 600×600 透過 | 全員右向き。足裏の中心を (300, 560) に。身長約 500px |
+| 同上 | `face.png` | 256×256 | 盤面の駒・選択カード・タイトル |
+| `assets/characters/photo/` | 上と同じ 7 ポーズ | 600×600 透過 | 頭が空白の丸の体。白〜薄ピンクで描く（色は実行時に乗算） |
+| 各フォルダ | `anchors.json` | — | `feet / head / forehead / eyes / cheeks / top`、`eyelid`（まぶた色）、`eyeWidth`。既定値はフォールバック絵に合わせてある |
+| `assets/sfx/` | `place win draw button kiss hug shake` の mp3/ogg | 各 1 秒以内 | `manifest.json` に登録 |
 
-### 動物パーツ `assets/characters/{cat,dog,rabbit,bear}/`
-| ファイル | サイズ | 基準位置 | 備考 |
-|---|---|---|---|
-| `head.png` | 512×512 | (256, 460) = 首 | 顔の円は中心 (256, 240)・半径 220 を目安（写真モードの顔もこの円に入る） |
-| `head_blush.png` | 512×512 | 同上 | 頬が赤い版。キス／ハグ／握手された側に使用 |
-| `ear_l.png` `ear_r.png` | 256×256 | (128, 230) = 耳の付け根 | 上向きに描く。頭への取り付け位置は L(110,70) R(402,70)。動物ごとの既定角度は `rig.json` の `animalPose` |
-| `tail.png` | 256×256 | (40, 128) = 付け根 | 右向きに伸ばして描く。ねこの「ハートしっぽ」は先端 (200,100) にハートが重なる |
-| `icon.png` | 256×256 | — | 盤面用・全身（Lv1 の駒） |
-| `icon_face.png` | 128×128 | — | 盤面用・顔（Lv2/Lv3 の駒） |
-
-- 同キャラ対戦の 2 体目は実行時に色相を 30° 回すので、1 色相で統一した塗りだと綺麗にずれる。
-- 写真モードの体の色候補は `assets/characters/photo/body_tint.json`（表示名は `src/i18n/*.json` の `color.*`）。
-- ポーズ・キーフレーム（キス／ハグ／握手／考え中／歩き／喜び／しょんぼり／決めポーズ）は `rig.json` の `clips`。`[時間ms, {rot, x, y, sx, sy}]` を並べるだけで調整できる。
-- 効果音: `assets/sfx/` に `place / win / draw / button / kiss / hug / shake` の mp3/ogg を置き、`assets/sfx/manifest.json` に `"kiss": "./sfx/kiss.mp3"` のように登録（登録がない音は合成音のまま）。
-- 確認: `npm run dev` → `?mock=playables` も併用。差し替え後は `npm run test:e2e` で容量（5MB）と外部通信ゼロが自動チェックされる。
+- 置いたら `npm run build`（`art manifest: N image slots, X KB` と出る）。3MB を超えるとビルドが止まる。
+- 画像が無いスロットだけフォールバックになるので、1 枚ずつ差し替えて確認できる。
+- 演出のタイミング・動きは `src/fx/ceremony.ts`（Codex 実装、キーフレームは ms 指定）。
 
 ### 公開の更新（GitHub Pages）
 ```bash

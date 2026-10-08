@@ -6,4 +6,5 @@ export { ModeSelectScene } from './modeSelect';
 export { CharSelectScene } from './charSelect';
 export { PhotoScene } from './photo';
 export { SettingsScene } from './settings';
+export { SideSelectScene } from './sideSelect';
 export { createDraft, finalize } from './setup';

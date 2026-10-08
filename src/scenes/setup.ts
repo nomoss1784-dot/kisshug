@@ -43,6 +43,8 @@ export function finalize(draft: SetupDraft, store: Store): MatchConfig {
   p1.hueShift = 0;
   p2.hueShift = !p1.photo && !p2.photo && p1.animal === p2.animal ? 30 : 0;
   if (draft.mode === 'classic') {
+    // SPEC §3.1: X wins = kiss, O wins = hug. Sides were chosen on the side-select screen.
+    p2.mark = p1.mark === 'x' ? 'o' : 'x';
     p1.reward = p1.mark === 'o' ? 'hug' : 'kiss';
     p2.reward = p2.mark === 'o' ? 'hug' : 'kiss';
   }

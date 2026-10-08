@@ -1,10 +1,10 @@
 import type { App, Scene } from '../ui/app';
 import type { Store } from '../state/store';
 import type { Sfx } from '../audio/sfx';
-import type { RigDef } from '../rig/types';
 import type { Platform } from '../platform/types';
 import type { AiClient } from '../ai/client';
-import type { PlayerConfig } from '../state/types';
+import { BODY_TINTS, type PlayerConfig } from '../state/types';
+import type { ArtSpec } from '../art/characters';
 import { t } from '../i18n';
 
 /** Everything scenes need; passed to every scene constructor. */
@@ -12,7 +12,6 @@ export interface GameContext {
   app: App;
   store: Store;
   sfx: Sfx;
-  rig: RigDef;
   platform: Platform;
   ai: AiClient;
   photoModeEnabled: boolean;
@@ -29,3 +28,9 @@ export function playerName(p: PlayerConfig, other?: PlayerConfig): string {
   if (other && !other.photo && other.animal === p.animal && !other.isAi) return `${base} ${p.id}`;
   return base;
 }
+
+export function artSpecOf(p: PlayerConfig): ArtSpec {
+  return { animal: p.animal, hueShift: p.hueShift, photo: p.photo, bodyColor: p.photo ? BODY_TINTS[p.bodyTint] : undefined };
+}
+
+export const markGlyph = (mark: 'o' | 'x'): string => (mark === 'x' ? t('side.x.short') : t('side.o.short'));

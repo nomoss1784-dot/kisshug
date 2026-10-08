@@ -25,8 +25,8 @@
   "char.locked.hint": "いつかなかまがふえるかも",
   "select.title": "{player}のキャラ",
   "select.aiTitle": "AIのキャラ",
-  "select.side.o": "○側",
-  "select.side.x": "✗側",
+  "select.side.o": "◯側のキャラ",
+  "select.side.x": "✗側のキャラ",
   "select.random": "おまかせ",
   "reward.title": "{player}が勝ったら？",
   "reward.kiss": "キス",
@@ -96,5 +96,13 @@
   "common.player2": "プレイヤー2",
   "common.you": "あなた",
   "common.ai": "AI",
-  "common.photo": "写真"
+  "common.photo": "写真",
+  "side.title": "あなたはどっち？",
+  "side.x": "✗ で勝てばキス",
+  "side.o": "◯ で勝てばハグ",
+  "side.x.short": "✗",
+  "side.o.short": "◯",
+  "match.youAre": "あなたは {mark}",
+  "match.turnMark": "{mark} のばん",
+  "select.sideNote": "結果演出に登場します"
 }

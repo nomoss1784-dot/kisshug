@@ -22,8 +22,9 @@ Playables SDK のローカルモック: `http://localhost:5173/?mock=playables&l
 
 ```
 src/game      盤面ロジック（純粋関数）      src/ai        AI（Web Worker）
-src/scenes    画面                          src/rig       パーツ式リグ再生
+src/scenes    画面                          src/fx        演出エンジン（純粋タイムライン）＋描画
+src/art       ポーズ画像ローダ＋ぬいぐるみ風 SVG フォールバック
 src/photo     写真の読み込み・円形クロップ   src/platform  Web / Playables 抽象層
-src/i18n      ja.json / en.json             assets/       画像・rig.json・効果音
+src/i18n      ja.json / en.json             assets/       ポーズ画像スロット・anchors.json・効果音（作り方: ART_PROMPTS.md）
 tests/        単体テスト                     e2e/          Playwright
 ```

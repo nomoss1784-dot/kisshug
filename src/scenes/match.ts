@@ -3,21 +3,21 @@ import { Button, inRect, type Rect } from '../ui/widgets';
 import { fillRoundRect, roundRect, text, type Ctx } from '../ui/draw';
 import { COLORS } from '../ui/theme';
 import type { MatchConfig, PlayerConfig } from '../state/types';
-import { BODY_TINTS } from '../state/types';
 import { applyMove, createBoard, isValidMove, nextPlayer } from '../game';
 import type { Board, GameResult, Move, Player } from '../game/types';
-import { RigPlayer } from '../rig/player';
-import { loadSkin, type Skin } from '../rig/assets';
+import { loadCharacterArt, type CharacterArt } from '../art/characters';
+import { buildIdle, sampleClamped, type Timeline, type Pose } from '../fx';
+import { drawSprites, type Cast } from '../fx/renderer';
 import { drawPiece } from './pieces';
 import { ModeSelectScene } from './modeSelect';
 import { ResultScene } from './result';
-import { playerName } from './context';
+import { artSpecOf, markGlyph, playerName } from './context';
 import type { PointerPos } from '../ui/app';
 import { t } from '../i18n';
 
 const AI_TIME_LIMIT = 1500;
 
-/** The match: board with zoom/pan + two-step input, characters, AI turns. */
+/** The match: board with zoom/pan + two-step input, characters (idle breathing), AI turns. */
 export class MatchScene extends BaseScene {
   name = 'Match';
   board: Board;
@@ -27,8 +27,10 @@ export class MatchScene extends BaseScene {
   pending: Move | null = null;
   private cam = { zoom: 1, ox: 0, oy: 0 };
   private boardRect: Rect = { x: 0, y: 0, w: 0, h: 0 };
-  private rigs: [RigPlayer | null, RigPlayer | null] = [null, null];
-  private skins: [Skin | undefined, Skin | undefined] = [undefined, undefined];
+  private arts: [CharacterArt | undefined, CharacterArt | undefined] = [undefined, undefined];
+  private cast: Cast | null = null;
+  private idle: Timeline | null = null;
+  private idleT = 0;
   private aiToken = 0;
   private aiThinking = false;
   private pops = new Map<number, { s: number }>();
@@ -36,9 +38,9 @@ export class MatchScene extends BaseScene {
   private phase: 'play' | 'over' = 'play';
   private confirmBtn: Button | null = null;
   private cancelBtn: Button | null = null;
-  private lens: { x: number; y: number; r: number } | null = null;
   private zoomBtn: Button | null = null;
   private pendingSetAt = 0;
+  private lens: { x: number; y: number; r: number } | null = null;
   private portrait = true;
   private hintTimer = 4000;
 
@@ -54,17 +56,20 @@ export class MatchScene extends BaseScene {
   get twoStep(): boolean {
     return this.size > 3;
   }
+  /** Classic mode shows only X/O on the board; the animals appear in the result scene. */
+  get showCharacters(): boolean {
+    return this.cfg.mode !== 'classic';
+  }
   private player(p: Player): PlayerConfig {
     return this.cfg.players[p - 1];
   }
 
   enter(): void {
-    const specs = this.cfg.players.map((p) => ({ animal: p.animal, hueShift: p.hueShift, photo: p.photo, bodyColor: p.photo ? BODY_TINTS[p.bodyTint] : undefined }));
-    void Promise.all(specs.map((s) => loadSkin(this.g.rig, s))).then((skins) => {
-      this.skins = [skins[0], skins[1]];
-      this.rigs = [new RigPlayer(this.g.rig, skins[0], this.cfg.players[0].animal), new RigPlayer(this.g.rig, skins[1], this.cfg.players[1].animal)];
+    // Lazy-load only the two characters of this match (SPEC §6.3).
+    void Promise.all(this.cfg.players.map((p) => loadCharacterArt(artSpecOf(p)))).then((arts) => {
+      this.arts = [arts[0], arts[1]];
+      this.cast = { actor: { art: arts[0], facing: 1 }, target: { art: arts[1], facing: -1 }, charHeight: 100 };
       this.layout(this.w, this.h);
-      this.refreshPoses();
     });
     if (this.player(this.current).isAi) this.startAi();
   }
@@ -92,15 +97,16 @@ export class MatchScene extends BaseScene {
     this.addBack(() => this.g.go(new ModeSelectScene(this.g)));
     this.addGear();
     const headerH = 60 * u;
+    const chars = this.showCharacters;
     if (this.portrait) {
-      const side = Math.min(this.w - 12 * u, this.h - headerH - 150 * u, safe.h * 0.62);
+      const side = Math.min(this.w - 12 * u, this.h - headerH - (chars ? 150 : 70) * u, safe.h * (chars ? 0.62 : 0.8));
       this.boardRect = { x: this.w / 2 - side / 2, y: this.h / 2 - side / 2 + headerH * 0.25, w: side, h: side };
     } else {
-      const side = Math.min(this.h - headerH - 16 * u, this.w * 0.56);
+      const side = Math.min(this.h - headerH - 16 * u, this.w * (chars ? 0.56 : 0.8));
       this.boardRect = { x: this.w / 2 - side / 2, y: headerH + (this.h - headerH - side) / 2, w: side, h: side };
     }
     this.cam = { zoom: 1, ox: 0, oy: 0 };
-    this.placeRigs();
+    this.rebuildIdle();
     this.confirmBtn = null;
     this.cancelBtn = null;
     this.zoomBtn = null;
@@ -121,50 +127,36 @@ export class MatchScene extends BaseScene {
     }
   }
 
-  private placeRigs(): void {
+  /** Characters: player 1 bottom/left, player 2 top/right, both breathing. */
+  private rebuildIdle(): void {
+    if (!this.cast || !this.showCharacters) return;
     const { u } = this;
     const b = this.boardRect;
-    const [r1, r2] = this.rigs;
-    if (!r1 || !r2) return;
+    let p1 = { x: 0, y: 0, h: 0 };
+    let p2 = { x: 0, y: 0, h: 0 };
     if (this.portrait) {
       const topZone = b.y - 60 * u;
       const bottomZone = this.h - (b.y + b.h) - (this.twoStep ? 56 * u : 0);
-      const hTop = Math.max(40 * u, Math.min(130 * u, topZone * 0.95));
-      const hBot = Math.max(40 * u, Math.min(130 * u, bottomZone * 0.9));
-      r2.height = hTop;
-      r2.groundY = b.y - 6 * u;
-      r2.x = this.w * 0.72;
-      r2.facing = -1;
-      r1.height = hBot;
-      r1.groundY = this.h - 6 * u;
-      r1.x = this.w * 0.28;
-      r1.facing = 1;
+      p2 = { x: this.w * 0.72, y: b.y - 6 * u, h: Math.max(44 * u, Math.min(130 * u, topZone * 0.95)) };
+      p1 = { x: this.w * 0.28, y: this.h - 6 * u, h: Math.max(44 * u, Math.min(130 * u, bottomZone * 0.9)) };
     } else {
       const zoneW = b.x - 12 * u;
       const hh = Math.max(60 * u, Math.min(this.h * 0.42, zoneW * 0.9, 220 * u));
-      r1.height = hh;
-      r1.groundY = b.y + b.h;
-      r1.x = b.x / 2;
-      r1.facing = 1;
-      r2.height = hh;
-      r2.groundY = b.y + b.h;
-      r2.x = b.x + b.w + (this.w - b.x - b.w) / 2;
-      r2.facing = -1;
+      p1 = { x: b.x / 2, y: b.y + b.h, h: hh };
+      p2 = { x: b.x + b.w + (this.w - b.x - b.w) / 2, y: b.y + b.h, h: hh };
     }
+    // Both characters share one height so the idle timeline needs a single charHeight; keep the smaller.
+    this.cast.charHeight = Math.min(p1.h, p2.h);
+    let actorPose: Pose = 'idle';
+    let targetPose: Pose = 'idle';
+    if (this.phase === 'over' && this.result.winner) {
+      if (this.result.winner === 1) actorPose = 'happy';
+      else targetPose = 'happy';
+    }
+    this.idle = buildIdle({ actorX: p1.x, targetX: p2.x, groundY: p1.y, charHeight: this.cast.charHeight, dir: 1, seed: 7 }, { actorPose, targetPose });
+    this.p2GroundOffset = p2.y - p1.y;
   }
-
-  private refreshPoses(): void {
-    const [r1, r2] = this.rigs;
-    if (!r1 || !r2) return;
-    if (this.phase === 'over') return;
-    const rigOf = (p: Player) => (p === 1 ? r1 : r2);
-    const cur = rigOf(this.current);
-    const other = rigOf(nextPlayer(this.current));
-    if (this.aiThinking && this.player(this.current).isAi) {
-      if (cur.current !== 'think') cur.play('think');
-    } else if (cur.current !== 'idle') cur.play('idle');
-    if (other.current !== 'idle') other.play('idle');
-  }
+  private p2GroundOffset = 0;
 
   // ---- camera ---------------------------------------------------------------
   private cellPx(): number {
@@ -190,6 +182,9 @@ export class MatchScene extends BaseScene {
     this.cam.ox = sx - b.x - lx * nz;
     this.cam.oy = sy - b.y - ly * nz;
     this.clampCam();
+  }
+  private resetCam(): void {
+    this.cam = { zoom: 1, ox: 0, oy: 0 };
   }
   /** Screen centre of a cell. */
   private cellCenter(m: Move): PointerPos {
@@ -229,7 +224,6 @@ export class MatchScene extends BaseScene {
       return;
     }
     this.current = nextPlayer(this.current);
-    this.refreshPoses();
     if (this.player(this.current).isAi) this.startAi();
   }
 
@@ -241,7 +235,6 @@ export class MatchScene extends BaseScene {
     if (this.phase !== 'play') return;
     const token = ++this.aiToken;
     this.aiThinking = true;
-    this.refreshPoses();
     const started = performance.now();
     const minDelay = this.size === 3 ? 550 : 350;
     this.g.ai
@@ -274,8 +267,6 @@ export class MatchScene extends BaseScene {
       this.g.sfx.play('win');
       const winner = this.player(result.winner);
       const loser = this.player(nextPlayer(result.winner));
-      this.rigs[result.winner - 1]?.play('happy');
-      this.rigs[nextPlayer(result.winner) - 1]?.play('sad');
       if (this.cfg.opponent === 'ai' && this.cfg.difficulty === 'hard') {
         if (loser.isAi) {
           store.stats.hardStreak++;
@@ -285,13 +276,14 @@ export class MatchScene extends BaseScene {
     } else {
       this.g.sfx.play('draw');
     }
+    this.rebuildIdle();
     void store.saveStats();
     this.tweens.to({}, {}, 1300, { onComplete: () => this.g.go(new ResultScene(this.g, this.cfg, result)) });
   }
 
   // ---- update / draw --------------------------------------------------------
   update(dt: number): void {
-    this.rigs.forEach((r) => r?.update(dt));
+    this.idleT += dt;
     if (this.banner > 0) this.banner -= dt;
     if (this.hintTimer > 0) this.hintTimer -= dt;
   }
@@ -299,7 +291,7 @@ export class MatchScene extends BaseScene {
   draw(ctx: Ctx): void {
     this.drawBg(ctx);
     this.drawBoard(ctx);
-    this.rigs.forEach((r) => r?.draw(ctx));
+    this.drawCharacters(ctx);
     this.drawHeader(ctx);
     if (this.cam.zoom > 1.01) this.zoomBtn?.draw(ctx);
     if (this.pending) {
@@ -315,29 +307,46 @@ export class MatchScene extends BaseScene {
     this.buttons.draw(ctx);
   }
 
+  private drawCharacters(ctx: Ctx): void {
+    if (!this.cast || !this.idle || !this.showCharacters) return;
+    const sprites = sampleClamped(this.idle, this.idleT).map((s) => (s.kind === 'pose' && s.who === 'target') || (s.kind !== 'pose' && s.attach.who === 'target') ? { ...s, y: s.kind === 'pose' ? s.y + this.p2GroundOffset : s.y } : s);
+    drawSprites(ctx, sprites, this.cast);
+    // "Thinking…" bubble above the AI character.
+    if (this.aiThinking) {
+      const u = this.u;
+      const who = this.current === 1 ? 'actor' : 'target';
+      const lead = sprites.find((s) => s.kind === 'pose' && s.who === who);
+      if (lead && lead.kind === 'pose') {
+        const bx = lead.x + (who === 'actor' ? 1 : -1) * this.cast.charHeight * 0.35;
+        const by = lead.y - this.cast.charHeight * 1.05;
+        fillRoundRect(ctx, bx - 26 * u, by - 14 * u, 52 * u, 28 * u, 14 * u, '#FFFFFF');
+        const dots = Math.floor(this.idleT / 300) % 3;
+        text(ctx, '•'.repeat(dots + 1), bx, by, { size: 16 * u, color: COLORS.textSoft });
+      }
+    }
+  }
+
   private drawHeader(ctx: Ctx): void {
     const u = this.u;
     const [p1, p2] = this.cfg.players;
     const cur = this.player(this.current);
     const other = this.player(nextPlayer(this.current));
+    const classic = this.cfg.mode === 'classic';
     let label: string;
-    if (this.phase === 'over') label = this.result.status === 'draw' ? t('result.draw') : t('result.win', { name: playerName(this.player(this.result.winner!), this.player(nextPlayer(this.result.winner!))) });
+    if (this.phase === 'over') label = this.result.status === 'draw' ? t('result.draw') : t('result.win', { name: classic ? markGlyph(this.player(this.result.winner!).mark) : playerName(this.player(this.result.winner!), this.player(nextPlayer(this.result.winner!))) });
     else if (this.aiThinking) label = t('match.thinking');
+    else if (classic) label = this.cfg.opponent === 'ai' ? t('match.youAre', { mark: markGlyph(cur.mark) }) : t('match.turnMark', { mark: markGlyph(cur.mark) });
     else if (this.cfg.opponent === 'ai') label = t('match.yourTurn');
     else label = t('match.turn', { name: playerName(cur, other) });
     const size = this.cfg.opponent === 'human' && this.phase === 'play' ? 26 * u : 22 * u;
     const w = Math.min(this.safe.w - 130 * u, 420 * u);
     fillRoundRect(ctx, this.w / 2 - w / 2, this.safe.y + 12 * u, w, 44 * u, 22 * u, 'rgba(255,255,255,0.85)');
-    if (this.phase === 'play') {
-      // small piece preview of the current player
-      drawPiece(ctx, this.cfg, cur, this.skins[this.current - 1], this.w / 2 - w / 2 + 26 * u, this.safe.y + 34 * u, 34 * u);
-    }
+    if (this.phase === 'play') drawPiece(ctx, this.cfg, cur, this.arts[this.current - 1]?.face, this.w / 2 - w / 2 + 26 * u, this.safe.y + 34 * u, 34 * u);
     text(ctx, label, this.w / 2 + 12 * u, this.safe.y + 34 * u, { size, color: COLORS.text, maxWidth: w - 70 * u });
     if (this.banner > 0 && this.phase === 'play') {
-      const a = Math.min(1, this.banner / 400);
-      ctx.globalAlpha = a;
+      ctx.globalAlpha = Math.min(1, this.banner / 400);
       const first = this.player(this.cfg.first);
-      const firstName = playerName(first, first === p1 ? p2 : p1);
+      const firstName = classic ? markGlyph(first.mark) : playerName(first, first === p1 ? p2 : p1);
       const bw = Math.min(this.safe.w - 40 * u, 300 * u);
       const by = this.boardRect.y + 28 * u;
       fillRoundRect(ctx, this.w / 2 - bw / 2, by - 16 * u, bw, 32 * u, 16 * u, COLORS.accent);
@@ -361,7 +370,6 @@ export class MatchScene extends BaseScene {
     const c = this.cellPx();
     const ox = b.x + this.cam.ox;
     const oy = b.y + this.cam.oy;
-    // grid
     ctx.strokeStyle = COLORS.boardLine;
     ctx.lineWidth = n === 3 ? 4 * u : Math.max(1, Math.min(2, c * 0.05));
     ctx.beginPath();
@@ -372,35 +380,33 @@ export class MatchScene extends BaseScene {
       ctx.lineTo(ox + n * c, oy + i * c);
     }
     ctx.stroke();
-    // star points for big boards
     if (n >= 9) {
       ctx.fillStyle = COLORS.boardLine;
       const stars = n === 9 ? [2, 4, 6] : n === 15 ? [3, 7, 11] : n === 17 ? [3, 8, 13] : [3, 9, 15];
-      for (const r of stars) for (const col of stars) {
-        ctx.beginPath();
-        ctx.arc(ox + (col + 0.5) * c, oy + (r + 0.5) * c, Math.max(2, c * 0.1), 0, Math.PI * 2);
-        ctx.fill();
+      for (const r of stars)
+        for (const col of stars) {
+          ctx.beginPath();
+          ctx.arc(ox + (col + 0.5) * c, oy + (r + 0.5) * c, Math.max(2, c * 0.1), 0, Math.PI * 2);
+          ctx.fill();
+        }
+    }
+    // Winning cells: darker, thicker frame (SPEC: ハイライト).
+    if (this.result.line) {
+      const color = this.result.winner && this.player(this.result.winner).mark === 'x' && this.cfg.mode === 'classic' ? COLORS.x : this.cfg.mode === 'classic' ? COLORS.o : COLORS.primaryDark;
+      for (const m of this.result.line) {
+        const p = this.cellCenter(m);
+        ctx.fillStyle = 'rgba(255, 209, 102, 0.35)';
+        ctx.fillRect(p.x - c / 2, p.y - c / 2, c, c);
+        ctx.strokeStyle = color;
+        ctx.lineWidth = Math.max(3, c * 0.09);
+        ctx.strokeRect(p.x - c / 2 + ctx.lineWidth / 2, p.y - c / 2 + ctx.lineWidth / 2, c - ctx.lineWidth, c - ctx.lineWidth);
       }
     }
-    // win line
-    if (this.result.line) {
-      const first = this.cellCenter(this.result.line[0]);
-      const last = this.cellCenter(this.result.line[this.result.line.length - 1]);
-      ctx.strokeStyle = 'rgba(255, 209, 102, 0.75)';
-      ctx.lineWidth = c * 0.9;
-      ctx.lineCap = 'round';
-      ctx.beginPath();
-      ctx.moveTo(first.x, first.y);
-      ctx.lineTo(last.x, last.y);
-      ctx.stroke();
-    }
-    // pending highlight
     if (this.pending) {
       const p = this.cellCenter(this.pending);
       ctx.fillStyle = COLORS.highlight;
       ctx.fillRect(p.x - c / 2, p.y - c / 2, c, c);
     }
-    // pieces (only those on screen)
     const minCol = Math.max(0, Math.floor(-this.cam.ox / c));
     const maxCol = Math.min(n - 1, Math.ceil((b.w - this.cam.ox) / c));
     const minRow = Math.max(0, Math.floor(-this.cam.oy / c));
@@ -411,10 +417,9 @@ export class MatchScene extends BaseScene {
         if (!v) continue;
         const pop = this.pops.get(r * n + col);
         const sc = pop ? 0.4 + 0.6 * pop.s : 1;
-        drawPiece(ctx, this.cfg, this.player(v), this.skins[v - 1], ox + (col + 0.5) * c, oy + (r + 0.5) * c, c, sc);
+        drawPiece(ctx, this.cfg, this.player(v), this.arts[v - 1]?.face, ox + (col + 0.5) * c, oy + (r + 0.5) * c, c, sc);
       }
     }
-    // last move marker
     if (this.lastMove && this.phase === 'play') {
       const p = this.cellCenter(this.lastMove);
       ctx.strokeStyle = COLORS.lastMove;
@@ -424,7 +429,6 @@ export class MatchScene extends BaseScene {
       ctx.stroke();
     }
     ctx.restore();
-    // tap hint for empty 3x3 board
     if (n === 3 && !this.lastMove && this.humanTurn()) {
       ctx.globalAlpha = 0.5 + 0.3 * Math.sin(performance.now() / 300);
       ctx.strokeStyle = COLORS.primary;
@@ -446,7 +450,7 @@ export class MatchScene extends BaseScene {
     const lx = Math.max(b.x + R, Math.min(b.x + b.w - R, center.x));
     const ly = above ? center.y - R * 1.5 : center.y + R * 1.5;
     this.lens = { x: lx, y: ly, r: R };
-    const span = 5; // 5x5 cells
+    const span = 5;
     const lc = (R * 2) / span;
     ctx.save();
     ctx.shadowColor = 'rgba(60,30,45,0.35)';
@@ -482,7 +486,7 @@ export class MatchScene extends BaseScene {
           ctx.fillRect(x, y, lc, lc);
         }
         const v = this.board.cells[r * n + col];
-        if (v) drawPiece(ctx, this.cfg, this.player(v), this.skins[v - 1], x + lc / 2, y + lc / 2, lc);
+        if (v) drawPiece(ctx, this.cfg, this.player(v), this.arts[v - 1]?.face, x + lc / 2, y + lc / 2, lc);
         if (this.lastMove && this.lastMove.row === r && this.lastMove.col === col) {
           ctx.strokeStyle = COLORS.lastMove;
           ctx.lineWidth = 2;
@@ -494,9 +498,8 @@ export class MatchScene extends BaseScene {
         }
       }
     }
-    // ghost piece in the pending cell
     ctx.globalAlpha = 0.55;
-    drawPiece(ctx, this.cfg, this.player(this.current), this.skins[this.current - 1], lx, ly, lc);
+    drawPiece(ctx, this.cfg, this.player(this.current), this.arts[this.current - 1]?.face, lx, ly, lc);
     ctx.globalAlpha = 1;
     ctx.restore();
     ctx.beginPath();
@@ -522,8 +525,8 @@ export class MatchScene extends BaseScene {
   onPointerDown(p: PointerPos): void {
     super.onPointerDown(p);
     if (this.pending) {
-      this.confirmBtn && inRect(p, this.confirmBtn.rect) && (this.confirmBtn.pressed = true);
-      this.cancelBtn && inRect(p, this.cancelBtn.rect) && (this.cancelBtn.pressed = true);
+      if (this.confirmBtn && inRect(p, this.confirmBtn.rect)) this.confirmBtn.pressed = true;
+      if (this.cancelBtn && inRect(p, this.cancelBtn.rect)) this.cancelBtn.pressed = true;
     }
   }
   onPointerUp(): void {
@@ -564,10 +567,7 @@ export class MatchScene extends BaseScene {
   }
 
   private selectCell(m: Move): void {
-    if (!isValidMove(this.board, m)) {
-      // SPEC §4: occupied cells don't react.
-      return;
-    }
+    if (!isValidMove(this.board, m)) return; // SPEC §4: occupied cells don't react
     if (!this.twoStep) {
       this.place(m);
       return;
@@ -584,8 +584,7 @@ export class MatchScene extends BaseScene {
   /**
    * Double tap (SPEC §5.1): resets zoom. The first tap of the pair already
    * selected a cell, so a fresh double tap just clears that selection. If the
-   * highlighted cell was chosen earlier (the player paused to check the lens)
-   * and is tapped twice, that is a confirmation.
+   * highlighted cell was chosen earlier and is tapped twice, that confirms it.
    */
   onDoubleTap(p: PointerPos): void {
     if (!this.twoStep) return;
@@ -599,10 +598,6 @@ export class MatchScene extends BaseScene {
     this.pending = null;
     this.lens = null;
     this.resetCam();
-  }
-
-  private resetCam(): void {
-    this.cam = { zoom: 1, ox: 0, oy: 0 };
   }
   onPan(dx: number, dy: number): void {
     if (!this.twoStep || this.cam.zoom <= 1) return;

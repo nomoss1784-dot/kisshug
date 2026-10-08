@@ -20,7 +20,7 @@ export const COLORS = {
   lastMove: '#FF4D7D',
   heart: '#FF5C8A',
   blush: 'rgba(255, 110, 140, 0.55)',
-  o: '#4FB1A6',
+  o: '#5AA7FF',
   x: '#FF6F91',
   disabled: '#D8CCD2',
 };

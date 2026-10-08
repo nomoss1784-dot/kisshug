@@ -4,6 +4,7 @@ import type { Ctx } from '../ui/draw';
 import type { GameMode, Opponent } from '../state/types';
 import { TitleScene } from './title';
 import { CharSelectScene } from './charSelect';
+import { SideSelectScene } from './sideSelect';
 import { COLORS } from '../ui/theme';
 import { text } from '../ui/draw';
 
@@ -58,7 +59,7 @@ export class ModeSelectScene extends BaseScene {
             style: o === 'ai' ? 'primary' : 'secondary',
             fontSize: 22 * u,
             id: `opp-${o}`,
-            onClick: () => this.g.go(new CharSelectScene(this.g, { mode: this.mode, opponent: o })),
+            onClick: () => this.g.go(this.mode === 'classic' ? new SideSelectScene(this.g, { opponent: o }) : new CharSelectScene(this.g, { mode: this.mode, opponent: o })),
           }).set(x, y, bw, bh),
         );
         y += bh + gap;

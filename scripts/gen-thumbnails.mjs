@@ -19,7 +19,6 @@ for (const [name, w, h] of sizes) {
     const s = window.__kisshug.top();
     s.thumbnailMode = true;
     s.buttons.buttons = [];
-    s.players.forEach((p, i) => { p.height *= 1.6; p.groundY = window.innerHeight * 0.72; p.x = window.innerWidth * (0.2 + 0.2 * i); });
   });
   await page.waitForTimeout(300);
   await page.screenshot({ path: `submission/thumbnails/thumb-${name}.png` });

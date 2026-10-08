@@ -6,11 +6,15 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "build:playables": "node scripts/build-playables.mjs",
+    "build:playables": "node scripts/art-manifest.mjs && node scripts/build-playables.mjs",
     "preview": "vite preview --port 4173 --strictPort",
     "test": "vitest run",
     "test:e2e": "playwright test",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "art:manifest": "node scripts/art-manifest.mjs",
+    "art:anchors": "node scripts/gen-anchors.mjs",
+    "predev": "node scripts/art-manifest.mjs",
+    "prebuild": "node scripts/art-manifest.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.49.0",
