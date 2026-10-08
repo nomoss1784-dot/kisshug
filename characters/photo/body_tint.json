@@ -1,0 +1,10 @@
+{
+  "$comment": "Pastel body colours for photo mode (SPEC §11). Keys match i18n color.* labels.",
+  "default": "pink",
+  "colors": {
+    "pink": "#F9C6D3",
+    "mint": "#BFEBDB",
+    "lavender": "#D6CCF2",
+    "lemon": "#F9EFB0"
+  }
+}

@@ -1,0 +1,257 @@
+{
+  "$comment": "Pixel positions on the 600x600 pose images. feet = bottom-centre of the character (same in every pose). head = centre/radius of the face circle (photo mode pastes the photo here). forehead = where the X/O badge sits in classic mode. eyes/cheeks = blink and blush overlays. Edit these when you replace the art.",
+  "canvas": 600,
+  "feet": {
+    "x": 300,
+    "y": 560
+  },
+  "eyelid": "#FFFFFF",
+  "eyeWidth": 46,
+  "poses": {
+    "idle": {
+      "head": {
+        "x": 300,
+        "y": 215,
+        "r": 150
+      },
+      "forehead": {
+        "x": 300,
+        "y": 118
+      },
+      "eyes": [
+        {
+          "x": 252,
+          "y": 226
+        },
+        {
+          "x": 348,
+          "y": 226
+        }
+      ],
+      "cheeks": [
+        {
+          "x": 214,
+          "y": 272
+        },
+        {
+          "x": 386,
+          "y": 272
+        }
+      ],
+      "top": {
+        "x": 300,
+        "y": 50
+      }
+    },
+    "happy": {
+      "head": {
+        "x": 300,
+        "y": 209,
+        "r": 150
+      },
+      "forehead": {
+        "x": 300,
+        "y": 112
+      },
+      "eyes": [
+        {
+          "x": 252,
+          "y": 220
+        },
+        {
+          "x": 348,
+          "y": 220
+        }
+      ],
+      "cheeks": [
+        {
+          "x": 214,
+          "y": 266
+        },
+        {
+          "x": 386,
+          "y": 266
+        }
+      ],
+      "top": {
+        "x": 300,
+        "y": 44
+      }
+    },
+    "kiss_give": {
+      "head": {
+        "x": 354,
+        "y": 219,
+        "r": 150
+      },
+      "forehead": {
+        "x": 369,
+        "y": 123
+      },
+      "eyes": [
+        {
+          "x": 305,
+          "y": 223
+        },
+        {
+          "x": 400,
+          "y": 238
+        }
+      ],
+      "cheeks": [
+        {
+          "x": 260,
+          "y": 262
+        },
+        {
+          "x": 430,
+          "y": 289
+        }
+      ],
+      "top": {
+        "x": 380,
+        "y": 56
+      }
+    },
+    "kiss_receive": {
+      "head": {
+        "x": 264,
+        "y": 217,
+        "r": 150
+      },
+      "forehead": {
+        "x": 254,
+        "y": 120
+      },
+      "eyes": [
+        {
+          "x": 217,
+          "y": 233
+        },
+        {
+          "x": 313,
+          "y": 223
+        }
+      ],
+      "cheeks": [
+        {
+          "x": 184,
+          "y": 283
+        },
+        {
+          "x": 355,
+          "y": 265
+        }
+      ],
+      "top": {
+        "x": 247,
+        "y": 53
+      }
+    },
+    "hug_give": {
+      "head": {
+        "x": 342,
+        "y": 218,
+        "r": 150
+      },
+      "forehead": {
+        "x": 354,
+        "y": 121
+      },
+      "eyes": [
+        {
+          "x": 293,
+          "y": 223
+        },
+        {
+          "x": 388,
+          "y": 234
+        }
+      ],
+      "cheeks": [
+        {
+          "x": 250,
+          "y": 264
+        },
+        {
+          "x": 420,
+          "y": 285
+        }
+      ],
+      "top": {
+        "x": 362,
+        "y": 54
+      }
+    },
+    "hug_receive": {
+      "head": {
+        "x": 276,
+        "y": 216,
+        "r": 150
+      },
+      "forehead": {
+        "x": 269,
+        "y": 119
+      },
+      "eyes": [
+        {
+          "x": 229,
+          "y": 230
+        },
+        {
+          "x": 325,
+          "y": 223
+        }
+      ],
+      "cheeks": [
+        {
+          "x": 194,
+          "y": 279
+        },
+        {
+          "x": 366,
+          "y": 267
+        }
+      ],
+      "top": {
+        "x": 264,
+        "y": 51
+      }
+    },
+    "handshake": {
+      "head": {
+        "x": 324,
+        "y": 216,
+        "r": 150
+      },
+      "forehead": {
+        "x": 331,
+        "y": 119
+      },
+      "eyes": [
+        {
+          "x": 275,
+          "y": 223
+        },
+        {
+          "x": 371,
+          "y": 230
+        }
+      ],
+      "cheeks": [
+        {
+          "x": 234,
+          "y": 267
+        },
+        {
+          "x": 406,
+          "y": 279
+        }
+      ],
+      "top": {
+        "x": 336,
+        "y": 51
+      }
+    }
+  }
+}
